@@ -3,207 +3,526 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EMS 12-Lead ECG 實戰判讀練習</title>
+  <title>心電圖與節律器學習遊戲</title>
   <style>
-    :root{--bg:#060708;--panel:#101614;--border:rgba(53,255,154,.18);--text:#eafff2;--muted:#9dc6b0;--ok:#9effb9;--ng:#ffb3b3;--accent:#35ff9a}
+    :root{--bg:#060708;--panel:#101614;--border:rgba(53,255,154,.18);--text:#eafff2;--muted:#9dc6b0;--ok:#9effb9;--ng:#ffb3b3}
     *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(circle at top,#0c1311,#050607 60%);color:var(--text);font-family:system-ui,-apple-system,sans-serif}
-    .wrap{max-width:1400px;margin:0 auto;padding:16px}
+    body{margin:0;background:radial-gradient(circle at top,#0c1311,#050607 60%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .wrap{max-width:1280px;margin:0 auto;padding:16px}
     .header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-    .title{font-size:22px;font-weight:700;color:var(--accent)}
-    .status{display:flex;gap:8px}
-    .pill{border:1px solid var(--border);border-radius:999px;padding:7px 15px;background:rgba(53,255,154,.05);font-size:13px}
-    
-    .layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px}
-    .panel{background:rgba(16,22,20,.96);border:1px solid var(--border);border-radius:18px;box-shadow:0 16px 36px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
-    
-    /* 核心變更：圖片顯示區 */
-    .ecg-viewport{position:relative;background:#fff;min-height:500px;display:flex;align-items:center;justify-content:center;overflow:auto;cursor:zoom-in}
-    .ecg-viewport img{max-width:100%;height:auto;display:block}
-    
-    .case-history{padding:15px;background:rgba(53,255,154,0.05);border-bottom:1px solid var(--border);font-size:15px;line-height:1.6}
-    
-    .side{padding:16px;gap:14px;display:flex;flex-direction:column;max-height:90vh;overflow-y:auto}
-    .section{border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);border-radius:14px;padding:15px}
-    .section h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
-    
-    button{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(53,255,154,.08);color:var(--text);font-size:14px;cursor:pointer;transition:0.2s}
-    button:hover{background:rgba(53,255,154,.2)}
-    button.correct{background:#2e7d32 !important;border-color:var(--ok)}
-    button.wrong{background:#c62828 !important;border-color:var(--ng)}
-    
+    .title{font-size:22px;font-weight:700}
+    .status{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{border:1px solid var(--border);border-radius:999px;padding:7px 11px;background:rgba(53,255,154,.05);font-size:13px}
+    .layout{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(330px,1fr);gap:14px}
+    .panel{background:linear-gradient(180deg,rgba(16,22,20,.96),rgba(8,12,11,.96));border:1px solid var(--border);border-radius:18px;box-shadow:0 16px 36px rgba(0,0,0,.35);overflow:hidden}
+    .monitorTop{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;font-size:13px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.05)}
+    .alarm{min-width:92px;text-align:center;color:#ffd4d4;border:1px solid rgba(255,109,109,.25);background:rgba(255,109,109,.08);border-radius:999px;padding:4px 8px}
+    canvas{display:block;width:100%;height:auto;background:#050807}
+    .side{padding:14px;display:grid;gap:12px}
+    .section{border:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.02);border-radius:14px;padding:12px}
+    .section h3{margin:0 0 10px;font-size:15px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    button,select,textarea{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(53,255,154,.06);color:var(--text);font-size:14px}
+    textarea{min-height:110px;resize:vertical;background:rgba(255,255,255,.03)}
+    button{cursor:pointer}
+    button:hover,select:hover{background:rgba(53,255,154,.12)}
+    .secondary{background:rgba(255,255,255,.04)}
     .choices{display:grid;gap:8px}
-    .explanation{margin-top:15px;padding:12px;background:rgba(255,255,255,0.05);border-radius:10px;display:none}
-    .explanation.show{display:block}
-    
+    .result{min-height:48px;font-size:14px;line-height:1.5;margin-top:8px}
     .hidden{display:none}
-    @media (max-width:1000px){.layout{grid-template-columns:1fr}}
+    .scoreBox{border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:12px;background:rgba(255,255,255,.02)}
+    .ok{color:var(--ok)}
+    .ng{color:var(--ng)}
+    .small{color:var(--muted);font-size:12px;line-height:1.55}
+    .kv{display:grid;grid-template-columns:92px 1fr;gap:6px;font-size:13px;line-height:1.5}
+    .kv div:nth-child(odd){color:var(--muted)}
+    @media (max-width:980px){.layout{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-
 <div class="wrap">
   <div class="header">
-    <div class="title">LITFL 12-Lead ECG Quiz 12 導程實戰</div>
+    <div><div class="title">護理學生專用 心電圖與節律器學習遊戲</div></div>
     <div class="status">
-      <div class="pill">得分: <span id="score">0</span></div>
-      <div class="pill">進度: <span id="qIdx">1</span> / <span id="qTotal">10</span></div>
+      <div class="pill">得分 <span id="score">0</span></div>
+      <div class="pill">題目 <span id="qnum">1</span> / <span id="qtotal">10</span></div>
+      <div class="pill">模式 <span id="modeLabel">學習模式</span></div>
     </div>
   </div>
 
   <div class="layout">
-    <!-- 左側：案例與心電圖 -->
     <div class="panel">
-      <div class="case-history" id="caseHistory">
-        <strong>臨床病史：</strong> 載入中...
+      <div class="monitorTop">
+        <div><span style="color:#9dc6b0;">Lead II</span><span id="monitorName" style="margin-left:10px;">竇性心律</span></div>
+        <div style="display:flex;gap:8px;align-items:center;"><div class="pill">HR <span id="hrValue">72</span></div><div id="alarmLabel" class="alarm">監測中</div></div>
       </div>
-      <div class="ecg-viewport" onclick="toggleZoom()">
-        <img id="ecgImage" src="" alt="12-Lead ECG">
-      </div>
+      <canvas id="ecg" width="1000" height="340"></canvas>
     </div>
 
-    <!-- 右側：判讀與操作 -->
-    <div class="side">
+    <div class="panel side">
       <div class="section">
-        <h3>你的診斷是？</h3>
+        <h3>顯示模式</h3>
+        <div class="grid2"><button id="studyBtn">學習模式</button><button id="quizBtn" class="secondary">測驗模式</button></div>
+      </div>
+
+      <div class="section hidden" id="trainingSection">
+        <h3>實習前訓練</h3>
+        <div class="grid3"><button id="trainBasicBtn">基礎</button><button id="trainEmergencyBtn" class="secondary">緊急</button><button id="trainPacerBtn" class="secondary">節律器</button></div>
+        <div class="small" style="margin-top:8px;">基礎：竇性心律、房室傳導阻滯、PAC / 緊急：VT、VF、ST上升 / 節律器：AAI、VVI、DDD</div>
+      </div>
+
+      <div class="section" id="selectSection">
+        <h3>選擇波形</h3>
+        <select id="rhythmSelect"></select>
+        <div class="small" style="margin-top:8px;">在學習模式中，您可以在此顯示任何波形。在測驗模式中將會隱藏。</div>
+      </div>
+
+      <div class="section">
+        <h3>這是什麼心律？</h3>
         <div id="choices" class="choices"></div>
+        <div id="result" class="result"></div>
+        <div class="grid2"><button id="nextBtn">下一題</button><button id="replayBtn" class="secondary">重複此波形</button></div>
       </div>
 
-      <div id="explanationBox" class="section explanation">
-        <h3 id="resultLabel">判讀結果</h3>
-        <p id="ansText" style="font-weight:bold; color:var(--ok)"></p>
-        <p id="detailText" style="font-size:14px; color:var(--muted)"></p>
-        <button id="nextBtn" style="margin-top:10px; background:var(--accent); color:#000; font-weight:bold">下一題</button>
+      <div class="section hidden" id="summarySection">
+        <h3>10 題測驗結束</h3>
+        <div class="scoreBox">
+          <div id="finalScoreText">得分</div>
+          <div class="small" id="finalComment">最後請確認解說與回顧。</div>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="small" style="margin-bottom:6px;">提交用備忘錄</div>
+          <textarea id="submitText" readonly></textarea>
+        </div>
+        <div class="grid2" style="margin-top:10px;"><button id="copySubmitBtn">複製內容</button><button id="restartQuizBtn" class="secondary">重新挑戰 10 題</button></div>
       </div>
 
       <div class="section">
-        <h3>資源來源</h3>
-        <p style="font-size:12px; color:var(--muted)">
-          本案例取自 <strong>LITFL ECG Library</strong>。僅供醫學教育與判讀練習使用。在救護現場請務必結合生命徵象評估。
-        </p>
+        <h3>解說</h3>
+        <div class="kv">
+          <div>判讀重點</div><div id="pointText">觀察 P 波、QRS 波群與 RR 間隔。</div>
+          <div>觀察要點</div><div id="obsText">首先確認病人的症狀與脈搏。</div>
+          <div>注意</div><div id="warnText">此為學習用簡化波形。</div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// 1. 資料庫：從 LITFL 抓取的案例資料
-// 你可以根據 LITFL 的內容持續擴充這個 JSON 陣列
-const ecgDatabase = [
-  {
-    id: "litfl_001",
-    history: "68歲女性，自訴持續性胸痛伴隨冒冷汗，血壓 100/60 mmHg。",
-    img: "https://litfl.com/wp-content/uploads/2018/08/ECG-Anterior-STEMI-LAD-occlusion.jpg",
-    answer: "Acute Anterior STEMI",
-    options: ["Acute Anterior STEMI", "Pericarditis", "LBBB", "Incomplete RBBB"],
-    detail: "V2-V5 可見明顯的 ST 段上升 (STE)，且 Lead II, III, aVF 出現鏡像變化 (Reciprocal Change)。高度懷疑 LAD 阻塞。"
-  },
-  {
-    id: "litfl_002",
-    history: "55歲男性，嚴重噁心、嘔吐，心電圖呈現如下。",
-    img: "https://litfl.com/wp-content/uploads/2018/08/ECG-Inferior-STEMI-RCA-occlusion.jpg",
-    answer: "Acute Inferior STEMI",
-    options: ["Normal Sinus Rhythm", "Acute Inferior STEMI", "Hyperkalemia", "Brugada Syndrome"],
-    detail: "Lead II, III, aVF 出現 STE，且 Lead I, aVL 出現鏡像變化的 ST 段壓低。通常由 RCA 阻塞引起。"
-  },
-  {
-    id: "litfl_003",
-    history: "70歲女性，洗腎病患，呼吸喘、全身無力。",
-    img: "https://litfl.com/wp-content/uploads/2018/08/Hyperkalaemia-ECG-Peaked-T-waves.jpg",
-    answer: "Hyperkalemia",
-    options: ["Anterior STEMI", "Hyperkalemia", "De Winter's T waves", "LVH"],
-    detail: "可見高尖對稱的 T 波 (Peaked T waves)，這是高血鉀的典型早期徵象。"
+(function(){
+  'use strict';
+
+  const canvas = document.getElementById('ecg');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  const midY = H * 0.58;
+  const fs = 500;
+  const pxPerSec = 165;
+  const secOnScreen = W / pxPerSec;
+  const N = Math.floor(fs * secOnScreen);
+  const buffer = new Float32Array(N);
+  let writeIdx = 0;
+  let engineT = 0;
+  let lastNow = performance.now() / 1000;
+
+  const ui = {
+    score: document.getElementById('score'),
+    qnum: document.getElementById('qnum'),
+    qtotal: document.getElementById('qtotal'),
+    modeLabel: document.getElementById('modeLabel'),
+    monitorName: document.getElementById('monitorName'),
+    hrValue: document.getElementById('hrValue'),
+    alarmLabel: document.getElementById('alarmLabel'),
+    rhythmSelect: document.getElementById('rhythmSelect'),
+    selectSection: document.getElementById('selectSection'),
+    choices: document.getElementById('choices'),
+    result: document.getElementById('result'),
+    pointText: document.getElementById('pointText'),
+    obsText: document.getElementById('obsText'),
+    warnText: document.getElementById('warnText'),
+    trainingSection: document.getElementById('trainingSection'),
+    summarySection: document.getElementById('summarySection'),
+    finalScoreText: document.getElementById('finalScoreText'),
+    finalComment: document.getElementById('finalComment'),
+    submitText: document.getElementById('submitText')
+  };
+
+  const scenarios = [
+    { id:'NSR', label:'竇性心律', hr:72, alarm:'MONITOR', point:'規律的 P 波後接著 QRS 波與 T 波。', obs:'心率約 60〜100 次/分且節律規律。', warn:'依序確認 P 波有無、QRS 寬度及 RR 間隔。', category:'basic' },
+    { id:'PAC', label:'心房期前收縮 (PAC)', hr:78, alarm:'ECTOPY', point:'出現比預期早的 P 波，隨後接著正常的 QRS 波。', obs:'觀察提早出現的 P 波、RR 間隔不齊，以及 QRS 寬度是否維持正常。', warn:'與 PVC 的區別在於 QRS 波不會發生嚴重的寬大畸形。', category:'basic' },
+    { id:'SSS', label:'病竇症候群 (SSS)', hr:28, alarm:'PAUSE', point:'此為學習用波形，模擬竇房結暫時不發出指令，導致 P 波與 QRS 波消失數秒，心臟看似停止。', obs:'確認有無長停搏 (pause)、心跳過緩、頭暈或暈厥等症狀。', warn:'此模擬反映了因高齡、藥物或竇房結周圍變化引起的 SSS 徵象。', category:'basic' },
+    { id:'AVB1', label:'第一度房室傳導阻滯', hr:58, alarm:'BLOCK', point:'每個 P 波後都有 QRS 波，但 PR 間隔延長。', obs:'確認 P 波沒有脫落，僅 PR 間隔過長。', warn:'此學習畫面旨在強化對 PR 間隔延長的觀察。', category:'basic' },
+    { id:'WENCK', label:'第二度房室傳導阻滯 (Wenckebach)', hr:52, alarm:'BLOCK', point:'PR 間隔逐漸延長，隨後發生一次 QRS 波脫落。', obs:'觀察 P 波形態維持一致，但 PR 間隔逐漸伸長。', warn:'脫落前的 QRS/T 波形態與竇性心律相同。', category:'basic' },
+    { id:'AVB2', label:'第二度房室傳導阻滯 (Mobitz II)', hr:44, alarm:'BLOCK', point:'P 波節律規律，但 QRS 波突然脫落。', obs:'由於出現脫落，容易導致心跳過緩，確認症狀至關重要。', warn:'需確認 QRS 脫落頻率及循環動態。', category:'basic' },
+    { id:'CHB', label:'完全性房室傳導阻滯', hr:34, alarm:'BLOCK', point:'P 波與 QRS 波各自獨立跳動，呈現房室分離現象。', obs:'確認有無嚴重的心跳過緩、意識下降或血壓降低。', warn:'此為因應高緊急度情況所設計的學習用顯示。', category:'basic' },
+    { id:'PVC', label:'心室期前收縮 (PVC)', hr:72, alarm:'ECTOPY', point:'提早出現寬大畸形的 QRS 波，隨後通常伴隨完全性代償間歇。', obs:'觀察單發性的提早寬大 QRS 波，及脈搏短絀。', warn:'需同時觀察 PVC 出現的頻率、連發情況及有無臨床症狀。', category:'emergency' },
+    { id:'NSVT', label:'非持續性心室頻脈 (NSVT)', hr:150, alarm:'VT RUN', point:'心室頻脈出現 3 次或以上且在短時間內自動停止。', obs:'觀察短暫連發的 VT、有無症狀或血壓下降。', warn:'重點在於觀察是否轉變為持續性 VT 及其連發次數。', category:'emergency' },
+    { id:'VT', label:'心室頻脈 (VT)', hr:180, alarm:'VT', point:'連續出現寬大的 QRS 波，可能導致循環動態惡化。', obs:'立即確認意識、脈搏、血壓及有無胸部症狀。', warn:'VT 緊急度極高，必須立即報告並準備急救。', category:'emergency' },
+    { id:'VF', label:'心室纖維顫動 (VF)', hr:0, alarm:'VF', point:'無法辨識 QRS 波，呈現不規則的波浪狀顫動。', obs:'視為無意識、無脈搏，立即啟動 BLS。', warn:'此為模擬最嚴重心律不整的學習畫面。', category:'emergency' },
+    { id:'STE', label:'ST 段上升', hr:68, alarm:'ST ↑', point:'從 S 波開始 ST 段呈現山型抬高，並直接連接到 T 波。', obs:'胸痛、冷汗等症狀與 12 導程心電圖的確認至關重要。', warn:'此波形模擬 S 到 T 波連續抬高，未呈現額外尖端。', category:'emergency' },
+    { id:'AAI', label:'AAI 節律', hr:60, alarm:'PACED', point:'節律訊號 (Spike) 後出現 P 波，接著出現 QRS 波。', obs:'確認心房訊號 -> P 波 -> QRS 波的順序。', warn:'AAI 假設在房室傳導正常的基礎下進行。', category:'pacer' },
+    { id:'VVI', label:'VVI 節律', hr:60, alarm:'PACED', point:'QRS 波前出現心室節律訊號，隨後跟著寬大的 QRS 波。', obs:'確認節律訊號是否規律地出現在 QRS 波之前。', warn:'白色短線代表節律訊號。', category:'pacer' },
+    { id:'DDD', label:'DDD 節律', hr:70, alarm:'PACED', point:'心房訊號後經過固定時間出現心室訊號。', obs:'在一個心週期中可看到 A spike 與 V spike。', warn:'此為固定 AV delay 的學習用簡化顯示。', category:'pacer' }
+  ];
+
+  const allChoices = scenarios.map(function(s){ return { value: s.id, label: s.label }; });
+  const defaultQuizIds = ['NSR','PAC','SSS','AVB1','WENCK','AVB2','CHB','PVC','NSVT','VT','VF','STE','AAI','VVI','DDD'];
+  let activeQuizIds = defaultQuizIds.slice();
+  let trainingMode = 'all';
+  let answeredQuestions = [];
+  let score = 0;
+  let qnum = 1;
+  let quizMode = false;
+  let locked = false;
+  let current = scenarios[0];
+  const qtotal = 10;
+  ui.qtotal.textContent = String(qtotal);
+
+  function shuffle(array){
+    const arr = array.slice();
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    return arr;
   }
-];
 
-let currentIdx = 0;
-let score = 0;
-let isAnswered = false;
+  function randomChoices(correctId){
+    const pool = allChoices.filter(function(c){ return activeQuizIds.indexOf(c.value) >= 0; });
+    const correct = pool.find(function(c){ return c.value === correctId; }) || allChoices.find(function(c){ return c.value === correctId; });
+    const others = shuffle(pool.filter(function(c){ return c.value !== correctId; })).slice(0, 2);
+    return shuffle(others.concat([correct]));
+  }
 
-// 2. 初始化功能
-function initQuiz() {
-  renderQuestion();
-  document.getElementById('qTotal').textContent = ecgDatabase.length;
-}
-
-function renderQuestion() {
-  const data = ecgDatabase[currentIdx];
-  isAnswered = false;
-  
-  // 更新 UI
-  document.getElementById('qIdx').textContent = currentIdx + 1;
-  document.getElementById('caseHistory').innerHTML = `<strong>臨床病史：</strong> ${data.history}`;
-  document.getElementById('ecgImage').src = data.img;
-  document.getElementById('explanationBox').classList.remove('show');
-  
-  // 渲染選項
-  const choicesDiv = document.getElementById('choices');
-  choicesDiv.innerHTML = '';
-  data.options.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.textContent = opt;
-    btn.onclick = () => checkAnswer(opt, btn);
-    choicesDiv.appendChild(btn);
-  });
-}
-
-// 3. 判讀邏輯
-function checkAnswer(selected, btn) {
-  if (isAnswered) return;
-  isAnswered = true;
-  
-  const data = ecgDatabase[currentIdx];
-  const allBtns = document.querySelectorAll('#choices button');
-  
-  if (selected === data.answer) {
-    score += 10;
-    document.getElementById('score').textContent = score;
-    btn.classList.add('correct');
-    document.getElementById('resultLabel').textContent = "✅ 正確判讀";
-    document.getElementById('resultLabel').style.color = "var(--ok)";
-  } else {
-    btn.classList.add('wrong');
-    document.getElementById('resultLabel').textContent = "❌ 判讀錯誤";
-    document.getElementById('resultLabel').style.color = "var(--ng)";
-    // 標示出正確答案
-    allBtns.forEach(b => {
-      if (b.textContent === data.answer) b.classList.add('correct');
+  function renderChoices(list){
+    ui.choices.innerHTML = list.map(function(c){ return '<button data-choice="' + c.value + '">' + c.label + '</button>'; }).join('');
+    Array.from(ui.choices.querySelectorAll('button')).forEach(function(btn){
+      btn.addEventListener('click', function(){ answer(btn.dataset.choice); });
     });
   }
-  
-  // 顯示詳解
-  document.getElementById('ansText').textContent = data.answer;
-  document.getElementById('detailText').textContent = data.detail;
-  document.getElementById('explanationBox').classList.add('show');
-}
 
-// 4. 切換下一題
-document.getElementById('nextBtn').onclick = () => {
-  currentIdx++;
-  if (currentIdx < ecgDatabase.length) {
-    renderQuestion();
-  } else {
-    alert(`測驗結束！您的總分為：${score}`);
-    currentIdx = 0;
-    score = 0;
-    document.getElementById('score').textContent = "0";
-    renderQuestion();
+  function populateUI(){
+    ui.rhythmSelect.innerHTML = scenarios.map(function(s){ return '<option value="' + s.id + '">' + s.label + '</option>'; }).join('');
+    renderChoices(randomChoices('NSR'));
   }
-};
 
-// 5. 圖片縮放功能（點擊圖片放大）
-function toggleZoom() {
-  const img = document.getElementById('ecgImage');
-  if (img.style.maxWidth === 'none') {
-    img.style.maxWidth = '100%';
-    img.parentElement.style.cursor = 'zoom-in';
-  } else {
-    img.style.maxWidth = 'none';
-    img.parentElement.style.cursor = 'zoom-out';
+  function setScenario(id){
+    const s = scenarios.find(function(x){ return x.id === id; });
+    if(!s) return;
+    current = s;
+    ui.rhythmSelect.value = id;
+    ui.monitorName.textContent = quizMode ? '請判讀波形' : s.label;
+    ui.hrValue.textContent = String(s.hr);
+    ui.alarmLabel.textContent = s.alarm;
+    ui.pointText.textContent = s.point;
+    ui.obsText.textContent = s.obs;
+    ui.warnText.textContent = s.warn;
+    renderChoices(randomChoices(id));
+    ui.result.innerHTML = quizMode ? '' : '<span class="small">目前為學習模式。您可以顯示任何波形進行觀察。</span>';
   }
-}
 
-initQuiz();
+  function setMode(isQuiz){
+    quizMode = isQuiz;
+    locked = false;
+    ui.modeLabel.textContent = isQuiz ? '測驗模式' : '學習模式';
+    document.getElementById('studyBtn').classList.toggle('secondary', isQuiz);
+    document.getElementById('quizBtn').classList.toggle('secondary', !isQuiz);
+    ui.selectSection.style.display = isQuiz ? 'none' : 'block';
+    ui.trainingSection.classList.toggle('hidden', !isQuiz);
+    ui.summarySection.classList.add('hidden');
+    if(isQuiz){
+      qnum = 1;
+      score = 0;
+      answeredQuestions = [];
+      ui.score.textContent = '0';
+      ui.qnum.textContent = '1';
+      nextQuestion(true);
+    } else {
+      setScenario(ui.rhythmSelect.value || 'NSR');
+    }
+  }
+
+  function nextQuestion(reset){
+    if(!reset && qnum < qtotal) qnum += 1;
+    locked = false;
+    const historyIds = answeredQuestions.map(function(x){ return x.id; });
+    let pool = activeQuizIds.filter(function(id){ return historyIds.indexOf(id) < 0; });
+    if(pool.length === 0) pool = activeQuizIds.slice();
+    const id = pool[Math.floor(Math.random() * pool.length)];
+    ui.qnum.textContent = String(qnum);
+    setScenario(id);
+  }
+
+  function answer(choice){
+    if(!quizMode){
+      ui.result.innerHTML = '<span class="small">學習模式下不會進行評分。切換至測驗模式即可開始作答。</span>';
+      return;
+    }
+    if(locked) return;
+    locked = true;
+    const ok = choice === current.id;
+    answeredQuestions.push({ id: current.id, ok: ok, label: current.label, point: current.point, obs: current.obs, warn: current.warn });
+    if(ok){
+      score += 10;
+      ui.score.textContent = String(score);
+      ui.result.innerHTML = '<span class="ok">答對了！這是 ' + current.label + '</span>';
+    } else {
+      ui.result.innerHTML = '<span class="ng">答錯了。正確答案是 ' + current.label + '</span>';
+    }
+    ui.monitorName.textContent = current.label;
+  }
+
+  function setTrainingMode(mode){
+    trainingMode = mode;
+    activeQuizIds = scenarios.filter(function(s){ return mode === 'all' || s.category === mode; }).map(function(s){ return s.id; });
+    document.getElementById('trainBasicBtn').classList.toggle('secondary', mode !== 'basic');
+    document.getElementById('trainEmergencyBtn').classList.toggle('secondary', mode !== 'emergency');
+    document.getElementById('trainPacerBtn').classList.toggle('secondary', mode !== 'pacer');
+    if(quizMode){
+      qnum = 1;
+      score = 0;
+      answeredQuestions = [];
+      ui.score.textContent = '0';
+      ui.qnum.textContent = '1';
+      nextQuestion(true);
+    }
+  }
+
+  function showQuizSummary(){
+    const correct = answeredQuestions.filter(function(q){ return q.ok; });
+    const incorrect = answeredQuestions.filter(function(q){ return !q.ok; });
+    const summaryLines = answeredQuestions.map(function(q, idx){
+      return (idx + 1) + '. ' + q.label + ' / ' + (q.ok ? '正確' : '錯誤') + '\n' +
+        '- 判讀重點: ' + q.point + '\n' +
+        '- 觀察要點: ' + q.obs + '\n' +
+        '- 注意事項: ' + q.warn;
+    }).join('\n\n');
+
+    const modeName = trainingMode === 'basic' ? '基礎' : (trainingMode === 'emergency' ? '緊急' : (trainingMode === 'pacer' ? '節律器' : '全體'));
+    ui.finalScoreText.textContent = '得分 ' + score + ' / ' + (qtotal * 10) + ' 分（答對 ' + correct.length + ' / ' + qtotal + ' 題）';
+    ui.finalComment.textContent = incorrect.length ? ('建議複習：' + incorrect.map(function(q){ return q.label; }).join('、')) : '恭喜全數答對！您辛苦了。';
+    ui.submitText.value = ['心電圖學習遊戲結業', '模式: ' + modeName, '分數: ' + score + ' / ' + (qtotal * 10), '', summaryLines].join('\n');
+    ui.summarySection.classList.remove('hidden');
+  }
+
+  document.getElementById('studyBtn').addEventListener('click', function(){ setMode(false); });
+  document.getElementById('quizBtn').addEventListener('click', function(){ setMode(true); });
+  document.getElementById('trainBasicBtn').addEventListener('click', function(){ setTrainingMode('basic'); });
+  document.getElementById('trainEmergencyBtn').addEventListener('click', function(){ setTrainingMode('emergency'); });
+  document.getElementById('trainPacerBtn').addEventListener('click', function(){ setTrainingMode('pacer'); });
+  document.getElementById('nextBtn').addEventListener('click', function(){
+    if(!quizMode) return;
+    if(!locked){
+      ui.result.innerHTML = '<span class="small">請先作答。</span>';
+      return;
+    }
+    if(qnum >= qtotal){
+      showQuizSummary();
+      return;
+    }
+    nextQuestion(false);
+  });
+  document.getElementById('replayBtn').addEventListener('click', function(){
+    locked = false;
+    if(quizMode){
+      ui.result.textContent = '';
+      ui.monitorName.textContent = '請判讀波形';
+    }
+  });
+  document.getElementById('copySubmitBtn').addEventListener('click', async function(){
+    try {
+      await navigator.clipboard.writeText(ui.submitText.value);
+      ui.finalComment.textContent = '內容已複製到剪貼簿。';
+    } catch (e) {
+      ui.finalComment.textContent = '複製失敗，請手動複製下方文字。';
+    }
+  });
+  document.getElementById('restartQuizBtn').addEventListener('click', function(){
+    ui.summarySection.classList.add('hidden');
+    setMode(true);
+  });
+  ui.rhythmSelect.addEventListener('change', function(e){ if(!quizMode) setScenario(e.target.value); });
+
+  // (其餘心電圖數學引擎保持不變，因為那是數學計算，不涉及使用者顯示文字)
+  function gauss(x, mu, sigma, amp){
+    const z = (x - mu) / sigma;
+    return amp * Math.exp(-0.5 * z * z);
+  }
+  function wrap01(x){ x = x % 1; return x < 0 ? x + 1 : x; }
+  function baseline(t, amp){ return Math.sin(t * 2 * Math.PI * 0.22) * amp; }
+  function qrsTTemplate(ph, shift, scale){
+    const sc = (typeof scale === 'number') ? scale : 1;
+    return gauss(ph, 0.285 + shift, 0.010, -0.16 * sc) + gauss(ph, 0.305 + shift, 0.012, 1.00 * sc) + gauss(ph, 0.328 + shift, 0.014, -0.26 * sc) + gauss(ph, 0.55 + shift, 0.070, 0.30 * sc);
+  }
+  function pTemplate(ph, at, scale){
+    const sc = (typeof scale === 'number') ? scale : 1;
+    return gauss(ph, at, 0.025, 0.17 * sc);
+  }
+
+  function nsrSample(t){ const ph = wrap01(t * 72 / 60); return baseline(t, 0.025) + pTemplate(ph, 0.16) + qrsTTemplate(ph, 0, 1); }
+  function sssSample(t){
+    const cycle = 8.0;
+    const ph = wrap01(t / cycle);
+    if (ph > 0.25) return 0;
+    const beatWidth = 0.25 / 3;
+    const beatIndex = Math.floor(ph / beatWidth);
+    const beatStart = beatIndex * beatWidth;
+    const local = (ph - beatStart) / beatWidth;
+    let v = 0;
+    v += gauss(local, 0.10, 0.016, 0.09);
+    v += gauss(local, 0.22, 0.010, -0.12);
+    v += gauss(local, 0.24, 0.012, 0.90);
+    v += gauss(local, 0.265, 0.014, -0.22);
+    v += gauss(local, 0.42, 0.055, 0.20);
+    return v;
+  }
+  function avb1Sample(t){ const ph = wrap01(t * 58 / 60); return baseline(t, 0.020) + pTemplate(ph, 0.12) + qrsTTemplate(ph, 0.10, 1); }
+  function wenckSample(t){ const cycle = 4.0; const local = (t % cycle) / cycle; const pPos = [0.10, 0.40, 0.80]; const pr = [0.11, 0.18, null]; let v = 0; for(let i = 0; i < 3; i++){ const p = pPos[i]; v += gauss(local, p, 0.007, 0.04); if(pr[i] !== null){ const qrs = p + pr[i]; v += gauss(local, qrs - 0.010, 0.0055, -0.12) + gauss(local, qrs, 0.0075, 1.02) + gauss(local, qrs + 0.012, 0.0085, -0.28) + gauss(local, qrs + 0.11, 0.025, 0.14); } } return v; }
+  function avb2Sample(t){ const cycle = 1.35; const ph = wrap01(t / cycle); const twoCycle = wrap01(t / (cycle * 2)); let v = baseline(t, 0.022) + gauss(ph, 0.14, 0.022, 0.15); if(!(twoCycle > 0.50)){ v += gauss(ph, 0.30, 0.010, -0.16) + gauss(ph, 0.32, 0.012, 0.95) + gauss(ph, 0.345, 0.014, -0.26) + gauss(ph, 0.55, 0.070, 0.26); } return v; }
+  function chbSample(t){ const pPh = wrap01(t * 78 / 60); const qPh = wrap01(t * 34 / 60 + 0.12); return baseline(t, 0.018) + gauss(pPh, 0.12, 0.018, 0.12) + gauss(qPh, 0.24, 0.012, -0.14) + gauss(qPh, 0.26, 0.016, 0.82) + gauss(qPh, 0.29, 0.016, -0.22) + gauss(qPh, 0.52, 0.075, 0.22); }
+  function pacSample(t){ const ph = wrap01(t * 72 / 60); let v = baseline(t, 0.018) + pTemplate(ph, 0.16, 0.95) + qrsTTemplate(ph, 0, 0.95); if(ph > 0.56 && ph < 0.78){ const local = (ph - 0.56) / 0.22; v += gauss(local, 0.10, 0.016, 0.11) + gauss(local, 0.225, 0.010, -0.14) + gauss(local, 0.245, 0.012, 0.92) + gauss(local, 0.268, 0.014, -0.22) + gauss(local, 0.47, 0.055, 0.18); } return v; }
+  function pvcSample(t){ const ph = wrap01(t * 72 / 60); if(ph > 0.62 && ph < 0.90){ const local = (ph - 0.62) / 0.28; return baseline(t, 0.016) + gauss(local, 0.24, 0.020, 1.28) + gauss(local, 0.40, 0.050, -0.82) + gauss(local, 0.70, 0.100, 0.08); } return baseline(t, 0.022) + pTemplate(ph, 0.16, 0.9) + qrsTTemplate(ph, 0, 0.95); }
+  function nsvtSample(t){ const runCycle = 5.5; const phRun = wrap01(t / runCycle); if(phRun > 0.32 && phRun < 0.68){ const local = (phRun - 0.32) / 0.36; const vtph = wrap01(local * 4.2); return baseline(t, 0.014) + gauss(vtph, 0.22, 0.032, 1.10) + gauss(vtph, 0.34, 0.038, -0.55) + gauss(vtph, 0.62, 0.080, 0.10); } const ph = wrap01(t * 68 / 60); return baseline(t, 0.020) + gauss(ph, 0.16, 0.024, 0.15) + gauss(ph, 0.285, 0.010, -0.16) + gauss(ph, 0.305, 0.012, 0.92) + gauss(ph, 0.328, 0.014, -0.24) + gauss(ph, 0.55, 0.065, 0.26); }
+  function vtSample(t){ const ph = wrap01(t * 180 / 60); return baseline(t, 0.010) + gauss(ph, 0.18, 0.030, 1.18) + gauss(ph, 0.33, 0.040, -0.62) + gauss(ph, 0.60, 0.080, 0.10); }
+  function vfSample(t){ return 0.28 * Math.sin(t * 2 * Math.PI * 5.2) + 0.18 * Math.sin(t * 2 * Math.PI * 7.1 + 0.8) + 0.10 * Math.sin(t * 2 * Math.PI * 9.7 + 1.6); }
+  function steSample(t){ const ph = wrap01(t * 68 / 60); let v = 0; v += gauss(ph, 0.15, 0.018, 0.09) + gauss(ph, 0.285, 0.010, -0.10) + gauss(ph, 0.305, 0.012, 1.02) + gauss(ph, 0.338, 0.020, -1.02); const start = 0.345; const end = 0.79; if(ph > start && ph < end){ const u = (ph - start) / (end - start); const alpha = 2.1; const beta = 2.8; const hump = Math.pow(u, alpha - 1) * Math.pow(1 - u, beta - 1); v += 1.9 * hump; } return v; }
+  function aaiSample(t){ const ph = wrap01(t * 60 / 60); return baseline(t, 0.02) + gauss(ph, 0.145, 0.020, 0.15) + gauss(ph, 0.295, 0.009, -0.15) + gauss(ph, 0.31, 0.012, 0.95) + gauss(ph, 0.332, 0.014, -0.24) + gauss(ph, 0.55, 0.065, 0.28); }
+  function vviSample(t){ const ph = wrap01(t * 60 / 60); return baseline(t, 0.018) + gauss(ph, 0.225, 0.014, -0.10) + gauss(ph, 0.245, 0.024, 1.10) + gauss(ph, 0.29, 0.022, -0.45) + gauss(ph, 0.55, 0.085, 0.20); }
+  function dddSample(t){ const ph = wrap01(t * 70 / 60); return baseline(t, 0.018) + gauss(ph, 0.125, 0.017, 0.14) + gauss(ph, 0.27, 0.016, -0.10) + gauss(ph, 0.295, 0.024, 1.12) + gauss(ph, 0.34, 0.022, -0.40) + gauss(ph, 0.56, 0.085, 0.22); }
+
+  function sampleScenario(t, id){
+    switch(id){
+      case 'NSR': return nsrSample(t);
+      case 'PAC': return pacSample(t);
+      case 'SSS': return sssSample(t);
+      case 'AVB1': return avb1Sample(t);
+      case 'WENCK': return wenckSample(t);
+      case 'AVB2': return avb2Sample(t);
+      case 'CHB': return chbSample(t);
+      case 'PVC': return pvcSample(t);
+      case 'NSVT': return nsvtSample(t);
+      case 'VT': return vtSample(t);
+      case 'VF': return vfSample(t);
+      case 'STE': return steSample(t);
+      case 'AAI': return aaiSample(t);
+      case 'VVI': return vviSample(t);
+      case 'DDD': return dddSample(t);
+      default: return nsrSample(t);
+    }
+  }
+
+  function spikePositionsForScenario(id, t){
+    if(id === 'AAI'){
+      const ph = wrap01(t);
+      return Math.abs(ph - 0.108) < 0.002 ? [1] : [];
+    }
+    if(id === 'VVI'){
+      const ph = wrap01(t);
+      return Math.abs(ph - 0.19) < 0.002 ? [1] : [];
+    }
+    if(id === 'DDD'){
+      const ph = wrap01(t * 70 / 60);
+      const out = [];
+      if(Math.abs(ph - 0.10) < 0.002) out.push(1);
+      if(Math.abs(ph - 0.24) < 0.002) out.push(1);
+      return out;
+    }
+    return [];
+  }
+
+  function pushSamples(dt){
+    const count = Math.max(1, Math.floor(dt * fs));
+    for(let i = 0; i < count; i++){
+      engineT += 1 / fs;
+      buffer[writeIdx] = sampleScenario(engineT, current.id);
+      writeIdx = (writeIdx + 1) % N;
+    }
+  }
+
+  function drawGrid(){
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#050807';
+    ctx.fillRect(0, 0, W, H);
+    const mm = 4;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(53,255,154,0.05)';
+    for(let x = 0; x <= W; x += mm){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for(let y = 0; y <= H; y += mm){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(53,255,154,0.10)';
+    for(let x = 0; x <= W; x += mm * 5){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for(let y = 0; y <= H; y += mm * 5){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  }
+
+  function drawWave(){
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(53,255,154,0.95)';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(53,255,154,0.55)';
+    ctx.beginPath();
+    for(let i = 0; i < N; i++){
+      const idx = (writeIdx + i) % N;
+      const x = i / (N - 1) * W;
+      const y = midY - buffer[idx] * 60;
+      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    if(current.id === 'AAI' || current.id === 'VVI' || current.id === 'DDD'){
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.6;
+      for(let i = 0; i < N; i++){
+        const x = i / (N - 1) * W;
+        const t = engineT - ((N - i) / fs);
+        const spikes = spikePositionsForScenario(current.id, t);
+        if(spikes.length){
+          const top = midY - 112;
+          const bottom = midY - 96;
+          ctx.beginPath();
+          ctx.moveTo(x, top);
+          ctx.lineTo(x, bottom);
+          ctx.stroke();
+        }
+      }
+    }
+
+    const grad = ctx.createLinearGradient(W - 90, 0, W, 0);
+    grad.addColorStop(0, 'rgba(53,255,154,0)');
+    grad.addColorStop(1, 'rgba(53,255,154,0.20)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(W - 90, 0, 90, H);
+  }
+
+  function animate(){
+    const now = performance.now() / 1000;
+    const dt = Math.min(0.05, now - lastNow);
+    lastNow = now;
+    pushSamples(dt);
+    drawGrid();
+    drawWave();
+    requestAnimationFrame(animate);
+  }
+
+  function runSelfTests(){
+    console.assert(Array.isArray(activeQuizIds) && activeQuizIds.length > 0, 'activeQuizIds should be populated');
+    console.assert(typeof steSample(0.1) === 'number', 'steSample should return number');
+    console.assert(typeof vtSample(0.1) === 'number', 'vtSample should return number');
+    console.assert(typeof vfSample(0.1) === 'number', 'vfSample should return number');
+    console.assert(randomChoices('NSR').length === 3, 'randomChoices should return 3 choices');
+  }
+
+  populateUI();
+  setTrainingMode('basic');
+  setScenario('NSR');
+  animate();
+  runSelfTests();
+})();
 </script>
 </body>
 </html>
