@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EMS 12-Lead ECG 實戰判讀練習</title>
+  <style>
+    :root{--bg:#060708;--panel:#101614;--border:rgba(53,255,154,.18);--text:#eafff2;--muted:#9dc6b0;--ok:#9effb9;--ng:#ffb3b3;--accent:#35ff9a}
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at top,#0c1311,#050607 60%);color:var(--text);font-family:system-ui,-apple-system,sans-serif}
+    .wrap{max-width:1400px;margin:0 auto;padding:16px}
+    .header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+    .title{font-size:22px;font-weight:700;color:var(--accent)}
+    .status{display:flex;gap:8px}
+    .pill{border:1px solid var(--border);border-radius:999px;padding:7px 15px;background:rgba(53,255,154,.05);font-size:13px}
+    
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px}
+    .panel{background:rgba(16,22,20,.96);border:1px solid var(--border);border-radius:18px;box-shadow:0 16px 36px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
+    
+    /* 核心變更：圖片顯示區 */
+    .ecg-viewport{position:relative;background:#fff;min-height:500px;display:flex;align-items:center;justify-content:center;overflow:auto;cursor:zoom-in}
+    .ecg-viewport img{max-width:100%;height:auto;display:block}
+    
+    .case-history{padding:15px;background:rgba(53,255,154,0.05);border-bottom:1px solid var(--border);font-size:15px;line-height:1.6}
+    
+    .side{padding:16px;gap:14px;display:flex;flex-direction:column;max-height:90vh;overflow-y:auto}
+    .section{border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);border-radius:14px;padding:15px}
+    .section h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+    
+    button{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(53,255,154,.08);color:var(--text);font-size:14px;cursor:pointer;transition:0.2s}
+    button:hover{background:rgba(53,255,154,.2)}
+    button.correct{background:#2e7d32 !important;border-color:var(--ok)}
+    button.wrong{background:#c62828 !important;border-color:var(--ng)}
+    
+    .choices{display:grid;gap:8px}
+    .explanation{margin-top:15px;padding:12px;background:rgba(255,255,255,0.05);border-radius:10px;display:none}
+    .explanation.show{display:block}
+    
+    .hidden{display:none}
+    @media (max-width:1000px){.layout{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div class="title">LITFL 12-Lead ECG Quiz 12 導程實戰</div>
+    <div class="status">
+      <div class="pill">得分: <span id="score">0</span></div>
+      <div class="pill">進度: <span id="qIdx">1</span> / <span id="qTotal">10</span></div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- 左側：案例與心電圖 -->
+    <div class="panel">
+      <div class="case-history" id="caseHistory">
+        <strong>臨床病史：</strong> 載入中...
+      </div>
+      <div class="ecg-viewport" onclick="toggleZoom()">
+        <img id="ecgImage" src="" alt="12-Lead ECG">
+      </div>
+    </div>
+
+    <!-- 右側：判讀與操作 -->
+    <div class="side">
+      <div class="section">
+        <h3>你的診斷是？</h3>
+        <div id="choices" class="choices"></div>
+      </div>
+
+      <div id="explanationBox" class="section explanation">
+        <h3 id="resultLabel">判讀結果</h3>
+        <p id="ansText" style="font-weight:bold; color:var(--ok)"></p>
+        <p id="detailText" style="font-size:14px; color:var(--muted)"></p>
+        <button id="nextBtn" style="margin-top:10px; background:var(--accent); color:#000; font-weight:bold">下一題</button>
+      </div>
+
+      <div class="section">
+        <h3>資源來源</h3>
+        <p style="font-size:12px; color:var(--muted)">
+          本案例取自 <strong>LITFL ECG Library</strong>。僅供醫學教育與判讀練習使用。在救護現場請務必結合生命徵象評估。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 1. 資料庫：從 LITFL 抓取的案例資料
+// 你可以根據 LITFL 的內容持續擴充這個 JSON 陣列
+const ecgDatabase = [
+  {
+    id: "litfl_001",
+    history: "68歲女性，自訴持續性胸痛伴隨冒冷汗，血壓 100/60 mmHg。",
+    img: "https://litfl.com/wp-content/uploads/2018/08/ECG-Anterior-STEMI-LAD-occlusion.jpg",
+    answer: "Acute Anterior STEMI",
+    options: ["Acute Anterior STEMI", "Pericarditis", "LBBB", "Incomplete RBBB"],
+    detail: "V2-V5 可見明顯的 ST 段上升 (STE)，且 Lead II, III, aVF 出現鏡像變化 (Reciprocal Change)。高度懷疑 LAD 阻塞。"
+  },
+  {
+    id: "litfl_002",
+    history: "55歲男性，嚴重噁心、嘔吐，心電圖呈現如下。",
+    img: "https://litfl.com/wp-content/uploads/2018/08/ECG-Inferior-STEMI-RCA-occlusion.jpg",
+    answer: "Acute Inferior STEMI",
+    options: ["Normal Sinus Rhythm", "Acute Inferior STEMI", "Hyperkalemia", "Brugada Syndrome"],
+    detail: "Lead II, III, aVF 出現 STE，且 Lead I, aVL 出現鏡像變化的 ST 段壓低。通常由 RCA 阻塞引起。"
+  },
+  {
+    id: "litfl_003",
+    history: "70歲女性，洗腎病患，呼吸喘、全身無力。",
+    img: "https://litfl.com/wp-content/uploads/2018/08/Hyperkalaemia-ECG-Peaked-T-waves.jpg",
+    answer: "Hyperkalemia",
+    options: ["Anterior STEMI", "Hyperkalemia", "De Winter's T waves", "LVH"],
+    detail: "可見高尖對稱的 T 波 (Peaked T waves)，這是高血鉀的典型早期徵象。"
+  }
+];
+
+let currentIdx = 0;
+let score = 0;
+let isAnswered = false;
+
+// 2. 初始化功能
+function initQuiz() {
+  renderQuestion();
+  document.getElementById('qTotal').textContent = ecgDatabase.length;
+}
+
+function renderQuestion() {
+  const data = ecgDatabase[currentIdx];
+  isAnswered = false;
+  
+  // 更新 UI
+  document.getElementById('qIdx').textContent = currentIdx + 1;
+  document.getElementById('caseHistory').innerHTML = `<strong>臨床病史：</strong> ${data.history}`;
+  document.getElementById('ecgImage').src = data.img;
+  document.getElementById('explanationBox').classList.remove('show');
+  
+  // 渲染選項
+  const choicesDiv = document.getElementById('choices');
+  choicesDiv.innerHTML = '';
+  data.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt;
+    btn.onclick = () => checkAnswer(opt, btn);
+    choicesDiv.appendChild(btn);
+  });
+}
+
+// 3. 判讀邏輯
+function checkAnswer(selected, btn) {
+  if (isAnswered) return;
+  isAnswered = true;
+  
+  const data = ecgDatabase[currentIdx];
+  const allBtns = document.querySelectorAll('#choices button');
+  
+  if (selected === data.answer) {
+    score += 10;
+    document.getElementById('score').textContent = score;
+    btn.classList.add('correct');
+    document.getElementById('resultLabel').textContent = "✅ 正確判讀";
+    document.getElementById('resultLabel').style.color = "var(--ok)";
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('resultLabel').textContent = "❌ 判讀錯誤";
+    document.getElementById('resultLabel').style.color = "var(--ng)";
+    // 標示出正確答案
+    allBtns.forEach(b => {
+      if (b.textContent === data.answer) b.classList.add('correct');
+    });
+  }
+  
+  // 顯示詳解
+  document.getElementById('ansText').textContent = data.answer;
+  document.getElementById('detailText').textContent = data.detail;
+  document.getElementById('explanationBox').classList.add('show');
+}
+
+// 4. 切換下一題
+document.getElementById('nextBtn').onclick = () => {
+  currentIdx++;
+  if (currentIdx < ecgDatabase.length) {
+    renderQuestion();
+  } else {
+    alert(`測驗結束！您的總分為：${score}`);
+    currentIdx = 0;
+    score = 0;
+    document.getElementById('score').textContent = "0";
+    renderQuestion();
+  }
+};
+
+// 5. 圖片縮放功能（點擊圖片放大）
+function toggleZoom() {
+  const img = document.getElementById('ecgImage');
+  if (img.style.maxWidth === 'none') {
+    img.style.maxWidth = '100%';
+    img.parentElement.style.cursor = 'zoom-in';
+  } else {
+    img.style.maxWidth = 'none';
+    img.parentElement.style.cursor = 'zoom-out';
+  }
+}
+
+initQuiz();
+</script>
+</body>
+</html>
