@@ -3,43 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMS 評估工具</title>
+    <title>EMS 複選評估工具</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background-color: #f4f4f9; margin: 0; padding: 15px; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: -apple-system, sans-serif; background-color: #f4f4f9; margin: 0; padding: 10px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         
-        /* 計時器控制區 */
-        .timer-section { text-align: center; margin-bottom: 20px; background: #333; color: #fff; padding: 15px; border-radius: 10px; }
-        #timer { font-size: 3.5rem; font-family: 'Courier New', monospace; margin-bottom: 10px; color: #00ff00; }
-        .timer-btns button { padding: 8px 20px; font-size: 1rem; cursor: pointer; margin: 0 5px; border-radius: 5px; border: none; }
+        /* 計時器 */
+        .timer-section { text-align: center; margin-bottom: 15px; background: #222; color: #fff; padding: 10px; border-radius: 10px; position: sticky; top: 0; z-index: 100; }
+        #timer { font-size: 3rem; font-family: monospace; color: #00ff00; }
+        .timer-btns button { padding: 5px 15px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; }
         .btn-start { background: #28a745; color: white; }
-        .btn-pause { background: #ffc107; color: black; }
+        .btn-pause { background: #ffc107; }
         .btn-reset { background: #dc3545; color: white; }
 
-        /* 即時顯示區 */
-        #display-board { background: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.5; color: #444; }
-        .summary-item { margin-bottom: 3px; border-bottom: 1px dashed #eee; }
+        /* 摘要顯示區 */
+        #display-board { background: #fffde7; padding: 12px; border: 2px solid #fbc02d; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; }
+        .summary-line { margin-bottom: 4px; display: block; border-bottom: 1px solid #eee; padding-bottom: 2px; }
+        .tag { background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; margin-right: 4px; font-size: 0.85rem; border: 1px solid #c8e6c9; }
 
-        /* 按鈕列樣式 */
-        .row { margin-bottom: 18px; }
-        .row-title { font-weight: bold; margin-bottom: 8px; display: block; font-size: 1.1rem; }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        /* 按鈕區 */
+        .row { margin-bottom: 20px; }
+        .row-title { font-weight: bold; margin-bottom: 10px; display: block; color: #333; font-size: 1.1rem; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         
-        /* 選項按鈕樣式 */
         .opt-btn { 
-            padding: 10px 16px; border: 1px solid #ccc; background: #fff; border-radius: 6px; 
-            cursor: pointer; font-size: 1rem; transition: 0.2s;
+            padding: 12px 18px; border: 2px solid #ddd; background: #fff; border-radius: 8px; 
+            cursor: pointer; font-size: 1rem; user-select: none;
         }
-        .opt-btn.active { background-color: #28a745 !important; color: white !important; border-color: #218838; }
-        .sep { color: #aaa; font-weight: bold; }
+        /* 綠色啟動狀態 */
+        .opt-btn.active { background-color: #28a745 !important; color: white !important; border-color: #1e7e34; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        .sep { color: #ccc; font-size: 1.2rem; }
 
-        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+        hr { border: 0; border-top: 2px solid #eee; margin: 20px 0; }
+        .gcs-row { background: #f0f7ff; padding: 10px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 計時器 -->
     <div class="timer-section">
         <div id="timer">00:00</div>
         <div class="timer-btns">
@@ -49,149 +50,212 @@
         </div>
     </div>
 
-    <!-- 摘要顯示 -->
     <div id="display-board">
-        <strong>評估摘要：</strong>
-        <div id="out-意識" class="summary-item">意識：-</div>
-        <div id="out-呼吸道" class="summary-item">呼吸道：-</div>
-        <div id="out-呼吸" class="summary-item">呼吸：-</div>
-        <div id="out-胸部" class="summary-item">胸部：-</div>
-        <div id="out-循環" class="summary-item">循環(動脈/肢體/膚色/CRT)：-</div>
-        <div id="out-GCS" class="summary-item" style="color:blue">GCS：E- V- M- (共 - 分)</div>
-        <div id="out-其他" class="summary-item">瞳孔/感動/骨盆：-</div>
+        <strong>即時評估摘要：</strong>
+        <div id="summary-content">
+            <!-- 這裡由 JS 動態生成 -->
+        </div>
     </div>
 
-    <!-- 操作區 -->
-    <div class="row">
+    <!-- 意識列 -->
+    <div class="row" data-cat="意識">
         <span class="row-title">意識：</span>
         <div class="btn-group">
-            <button class="opt-btn" onclick="select(this, '意識')">清</button><span class="sep">-</span>
-            <button class="opt-btn" onclick="select(this, '意識')">聲</button><span class="sep">-</span>
-            <button class="opt-btn" onclick="select(this, '意識')">痛</button><span class="sep">-</span>
-            <button class="opt-btn" onclick="select(this, '意識')">否</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '意識')">清</button><span class="sep">-</span>
+            <button class="opt-btn" onclick="toggleBtn(this, '意識')">聲</button><span class="sep">-</span>
+            <button class="opt-btn" onclick="toggleBtn(this, '意識')">痛</button><span class="sep">-</span>
+            <button class="opt-btn" onclick="toggleBtn(this, '意識')">否</button>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row" data-cat="呼吸道">
         <span class="row-title">呼吸道：</span>
-        <button class="opt-btn" onclick="select(this, '呼吸道')">阻塞</button>
+        <div class="btn-group">
+            <button class="opt-btn" onclick="toggleBtn(this, '呼吸道')">阻塞</button>
+        </div>
     </div>
 
-    <div class="row">
+    <div class="row" data-cat="呼吸">
         <span class="row-title">呼吸：</span>
         <div class="btn-group">
-            <button class="opt-btn" onclick="select(this, '呼吸')">淺快</button><span class="sep">-</span>
-            <button class="opt-btn" onclick="select(this, '呼吸')">慢</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '呼吸')">淺快</button><span class="sep">-</span>
+            <button class="opt-btn" onclick="toggleBtn(this, '呼吸')">慢</button>
         </div>
     </div>
 
-    <div class="row">
-        <span class="row-title">胸部評估：</span>
+    <div class="row" data-cat="胸部視診">
+        <span class="row-title">胸部視診：</span>
         <div class="btn-group">
-            <button class="opt-btn" onclick="select(this, '胸部')">視：瘀傷</button>
-            <button class="opt-btn" onclick="select(this, '胸部')">視：不對稱</button>
-            <button class="opt-btn" onclick="select(this, '胸部')">聽：沒心音</button>
-            <button class="opt-btn" onclick="select(this, '胸部')">叩：濁音</button>
-            <button class="opt-btn" onclick="select(this, '胸部')">觸：皮下氣腫</button>
-            <button class="opt-btn" onclick="select(this, '胸部')">觸：壓痛</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '胸部視診')">瘀傷</button><span class="sep">-</span>
+            <button class="opt-btn" onclick="toggleBtn(this, '胸部視診')">不對稱</button>
         </div>
     </div>
 
-    <div class="row">
-        <span class="row-title">循環/肢體：</span>
+    <div class="row" data-cat="胸部聽診/叩診">
+        <span class="row-title">胸部聽/叩診：</span>
         <div class="btn-group">
-            <button class="opt-btn" onclick="select(this, '循環')">饒動脈不對稱</button>
-            <button class="opt-btn" onclick="select(this, '循環')">饒動脈摸不到</button>
-            <button class="opt-btn" onclick="select(this, '循環')">肢體濕冷</button>
-            <button class="opt-btn" onclick="select(this, '循環')">膚色發紺</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '胸部聽診/叩診')">沒有心音</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '胸部聽診/叩診')">濁音</button>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row" data-cat="胸部觸診">
+        <span class="row-title">胸部觸診：</span>
+        <div class="btn-group">
+            <button class="opt-btn" onclick="toggleBtn(this, '胸部觸診')">皮下氣腫</button><span class="sep">-</span>
+            <button class="opt-btn" onclick="toggleBtn(this, '胸部觸診')">壓痛</button>
+        </div>
+    </div>
+
+    <div class="row" data-cat="饒動脈/肢體/膚色">
+        <span class="row-title">循環狀況：</span>
+        <div class="btn-group">
+            <button class="opt-btn" onclick="toggleBtn(this, '饒動脈/肢體/膚色')">動脈不對稱</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '饒動脈/肢體/膚色')">動脈摸不到</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '饒動脈/肢體/膚色')">肢體濕冷</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '饒動脈/肢體/膚色')">肢體溫暖</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '饒動脈/肢體/膚色')">膚色蒼白</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '饒動脈/肢體/膚色')">膚色發紺</button>
+        </div>
+    </div>
+
+    <div class="row" data-cat="CRT">
         <span class="row-title">CRT：</span>
         <div class="btn-group">
-            <button class="opt-btn" onclick="select(this, '循環', 'CRT: 1s')">1s</button>
-            <button class="opt-btn" onclick="select(this, '循環', 'CRT: 2s')">2s</button>
-            <button class="opt-btn" onclick="select(this, '循環', 'CRT: 3s')">3s</button>
-            <button class="opt-btn" onclick="select(this, '循環', 'CRT: 4s')">4s</button>
-            <button class="opt-btn" onclick="select(this, '循環', 'CRT: 5s')">5s</button>
+            <button class="opt-btn" onclick="toggleBtn(this, 'CRT')">1秒</button>
+            <button class="opt-btn" onclick="toggleBtn(this, 'CRT')">2秒</button>
+            <button class="opt-btn" onclick="toggleBtn(this, 'CRT')">3秒</button>
+            <button class="opt-btn" onclick="toggleBtn(this, 'CRT')">4秒</button>
+            <button class="opt-btn" onclick="toggleBtn(this, 'CRT')">5秒</button>
         </div>
     </div>
 
-    <hr>
-    <div class="row">
-        <span class="row-title">GCS 評分：</span>
-        <div class="btn-group">E: <button class="opt-btn" onclick="updateGCS('E',4,this)">4</button><button class="opt-btn" onclick="updateGCS('E',3,this)">3</button><button class="opt-btn" onclick="updateGCS('E',2,this)">2</button><button class="opt-btn" onclick="updateGCS('E',1,this)">1</button></div>
-        <div class="btn-group" style="margin-top:5px">V: <button class="opt-btn" onclick="updateGCS('V',5,this)">5</button><button class="opt-btn" onclick="updateGCS('V',4,this)">4</button><button class="opt-btn" onclick="updateGCS('V',3,this)">3</button><button class="opt-btn" onclick="updateGCS('V',2,this)">2</button><button class="opt-btn" onclick="updateGCS('V',1,this)">1</button></div>
-        <div class="btn-group" style="margin-top:5px">M: <button class="opt-btn" onclick="updateGCS('M',6,this)">6</button><button class="opt-btn" onclick="updateGCS('M',5,this)">5</button><button class="opt-btn" onclick="updateGCS('M',4,this)">4</button><button class="opt-btn" onclick="updateGCS('M',3,this)">3</button><button class="opt-btn" onclick="updateGCS('M',2,this)">2</button><button class="opt-btn" onclick="updateGCS('M',1,this)">1</button></div>
-    </div>
-    <hr>
-
-    <div class="row">
-        <span class="row-title">其他：</span>
+    <div class="row" data-cat="骨盆">
+        <span class="row-title">骨盆：</span>
         <div class="btn-group">
-            <button class="opt-btn" onclick="select(this, '其他')">骨盆不穩</button>
-            <button class="opt-btn" onclick="select(this, '其他')">瞳孔不等大</button>
-            <button class="opt-btn" onclick="select(this, '其他')">瞳孔無反應</button>
-            <button class="opt-btn" onclick="select(this, '其他')">上肢無感覺</button>
-            <button class="opt-btn" onclick="select(this, '其他')">下肢無感覺</button>
+            <button class="opt-btn" onclick="toggleBtn(this, '骨盆')">不穩固</button>
+        </div>
+    </div>
+
+    <div class="row gcs-row">
+        <span class="row-title">GCS (單選評分)：</span>
+        <div class="btn-group">E: 
+            <button class="opt-btn" onclick="gcsBtn(this,'E',4)">4</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'E',3)">3</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'E',2)">2</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'E',1)">1</button>
+        </div>
+        <div class="btn-group" style="margin-top:8px">V: 
+            <button class="opt-btn" onclick="gcsBtn(this,'V',5)">5</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'V',4)">4</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'V',3)">3</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'V',2)">2</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'V',1)">1</button>
+        </div>
+        <div class="btn-group" style="margin-top:8px">M: 
+            <button class="opt-btn" onclick="gcsBtn(this,'M',6)">6</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'M',5)">5</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'M',4)">4</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'M',3)">3</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'M',2)">2</button>
+            <button class="opt-btn" onclick="gcsBtn(this,'M',1)">1</button>
+        </div>
+    </div>
+
+    <div class="row" data-cat="瞳孔">
+        <span class="row-title">瞳孔：</span>
+        <div class="btn-group">
+            <button class="opt-btn" onclick="toggleBtn(this, '瞳孔')">不等大</button><span class="sep">-</span>
+            <button class="opt-btn" onclick="toggleBtn(this, '瞳孔')">對光沒反應</button>
+        </div>
+    </div>
+
+    <div class="row" data-cat="感動">
+        <span class="row-title">感動：</span>
+        <div class="btn-group">
+            <button class="opt-btn" onclick="toggleBtn(this, '感動')">上肢沒感覺</button><span class="sep">-</span>
+            <button class="opt-btn" onclick="toggleBtn(this, '感動')">下肢沒感覺</button>
         </div>
     </div>
 </div>
 
 <script>
-    // 計時器變量
+    // 1. 計時器邏輯
     let timerInterval;
-    let totalSeconds = 0;
-
-    function updateTimerDisplay() {
-        const mins = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-        const secs = (totalSeconds % 60).toString().padStart(2, '0');
-        document.getElementById('timer').innerText = `${mins}:${secs}`;
+    let seconds = 0;
+    function startTimer() { if(!timerInterval) timerInterval = setInterval(()=>{ seconds++; updateTimer(); }, 1000); }
+    function pauseTimer() { clearInterval(timerInterval); timerInterval = null; }
+    function resetTimer() { pauseTimer(); seconds = 0; updateTimer(); }
+    function updateTimer() {
+        const m = Math.floor(seconds/60).toString().padStart(2,'0');
+        const s = (seconds%60).toString().padStart(2,'0');
+        document.getElementById('timer').innerText = `${m}:${s}`;
     }
 
-    function startTimer() {
-        if (timerInterval) return;
-        timerInterval = setInterval(() => {
-            totalSeconds++;
-            updateTimerDisplay();
-        }, 1000);
-    }
+    // 2. 複選按鈕邏輯
+    const selections = {}; // 儲存各分類選中的內容
 
-    function pauseTimer() {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-
-    function resetTimer() {
-        pauseTimer();
-        totalSeconds = 0;
-        updateTimerDisplay();
-    }
-
-    // 按鈕選擇
-    function select(btn, category, customText) {
-        const text = customText || btn.innerText;
-        // 切換 active 狀態（允許在同類別切換）
-        const btns = btn.parentElement.querySelectorAll('.opt-btn');
-        btns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    function toggleBtn(btn, category) {
+        btn.classList.toggle('active');
         
-        document.getElementById(`out-${category}`).innerText = `${category}：${text}`;
+        // 取得該分類下所有 active 的按鈕文字
+        const parent = btn.closest('.row');
+        const activeBtns = parent.querySelectorAll('.opt-btn.active');
+        const values = Array.from(activeBtns).map(b => b.innerText);
+        
+        if(values.length > 0) {
+            selections[category] = values.join(', ');
+        } else {
+            delete selections[category];
+        }
+        renderSummary();
     }
 
-    // GCS 邏輯
-    let gcs = { E: '-', V: '-', M: '-' };
-    function updateGCS(type, score, btn) {
+    // 3. GCS 單選但可取消邏輯
+    let gcs = { E: null, V: null, M: null };
+    function gcsBtn(btn, type, score) {
+        const isCurrentlyActive = btn.classList.contains('active');
+        
+        // 先清除該組顏色
         const btns = btn.parentElement.querySelectorAll('.opt-btn');
         btns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
 
-        gcs[type] = score;
-        const total = (Number.isInteger(gcs.E) && Number.isInteger(gcs.V) && Number.isInteger(gcs.M)) 
-                      ? (gcs.E + gcs.V + gcs.M) : '-';
-        document.getElementById('out-GCS').innerText = `GCS：E${gcs.E} V${gcs.V} M${gcs.M} (共 ${total} 分)`;
+        if (isCurrentlyActive) {
+            gcs[type] = null; // 如果本來就是綠的，點下去變不選
+        } else {
+            btn.classList.add('active');
+            gcs[type] = score;
+        }
+        renderSummary();
     }
+
+    // 4. 渲染摘要
+    function renderSummary() {
+        const container = document.getElementById('summary-content');
+        container.innerHTML = '';
+
+        // 先處理普通複選項目
+        const categories = ["意識", "呼吸道", "呼吸", "胸部視診", "胸部聽診/叩診", "胸部觸診", "饒動脈/肢體/膚色", "CRT", "骨盆", "瞳孔", "感動"];
+        
+        categories.forEach(cat => {
+            const line = document.createElement('div');
+            line.className = 'summary-line';
+            const val = selections[cat] ? selections[cat] : '<span style="color:#999">未選擇</span>';
+            line.innerHTML = `<strong>${cat}：</strong> ${val}`;
+            container.appendChild(line);
+        });
+
+        // 處理 GCS
+        const gcsLine = document.createElement('div');
+        gcsLine.className = 'summary-line';
+        gcsLine.style.color = 'blue';
+        const total = (gcs.E && gcs.V && gcs.M) ? (gcs.E + gcs.V + gcs.M) : '--';
+        gcsLine.innerHTML = `<strong>GCS：</strong> E${gcs.E||'-'} V${gcs.V||'-'} M${gcs.M||'-'} (總分: ${total})`;
+        container.appendChild(gcsLine);
+    }
+
+    // 初始化渲染
+    renderSummary();
 </script>
 
 </body>
